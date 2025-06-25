@@ -42,6 +42,7 @@ function getMenuItems($user_department, $user_level)
             'title' => 'SUMMARY',
             'submenu' => [
                 ['title' => 'SUMMARY', 'url' => 'sale_summary_view.php'],
+                ['title' => 'SUMMARY BY CUSTOMER', 'url' => 'customer_summary_list.php'],
             ]
         ];
 
@@ -78,6 +79,7 @@ function getMenuItems($user_department, $user_level)
             'title' => 'SUMMARY',
             'submenu' => [
                 ['title' => 'SUMMARY', 'url' => 'sale_summary_view.php'],
+                ['title' => 'SUMMARY BY CUSTOMER', 'url' => 'customer_summary_list.php'],
             ]
         ];
 

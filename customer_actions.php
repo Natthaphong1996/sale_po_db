@@ -1,99 +1,54 @@
 <?php
 // Language: PHP
-// File: customer_actions.php
-// Description: Handles adding, updating, activating, and deactivating customers.
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-include_once __DIR__ . '/config_db.php';
-
-// --- ADD NEW CUSTOMER ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add') {
-    $cus_name = trim($_POST['cus_name'] ?? '');
-
-    if (empty($cus_name)) {
-        $_SESSION['flash_error'] = 'Customer name cannot be empty.';
-    } else {
-        // Check for duplicates
-        $stmt = $conn->prepare("SELECT cus_id FROM customer_list WHERE cus_name = ?");
-        $stmt->bind_param('s', $cus_name);
-        $stmt->execute();
-        if ($stmt->get_result()->num_rows > 0) {
-            $_SESSION['flash_error'] = "Customer '{$cus_name}' already exists.";
-        } else {
-            // Insert new customer
-            $stmt_insert = $conn->prepare("INSERT INTO customer_list (cus_name, status) VALUES (?, 'active')");
-            $stmt_insert->bind_param('s', $cus_name);
-            if ($stmt_insert->execute()) {
-                $_SESSION['flash_success'] = 'New customer added successfully.';
-            } else {
-                $_SESSION['flash_error'] = 'Failed to add customer.';
-            }
-            $stmt_insert->close();
-        }
-        $stmt->close();
-    }
-    header('Location: customers_list.php');
-    exit;
-}
-
-// --- UPDATE CUSTOMER ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update') {
-    $cus_id = (int)($_POST['cus_id'] ?? 0);
-    $cus_name = trim($_POST['cus_name'] ?? '');
-
-    if ($cus_id > 0 && !empty($cus_name)) {
-        // Check for duplicates (excluding the current customer)
-        $stmt = $conn->prepare("SELECT cus_id FROM customer_list WHERE cus_name = ? AND cus_id != ?");
-        $stmt->bind_param('si', $cus_name, $cus_id);
-        $stmt->execute();
-        if ($stmt->get_result()->num_rows > 0) {
-            $_SESSION['flash_error'] = "Another customer with the name '{$cus_name}' already exists.";
-        } else {
-            $stmt_update = $conn->prepare("UPDATE customer_list SET cus_name = ? WHERE cus_id = ?");
-            $stmt_update->bind_param('si', $cus_name, $cus_id);
-            if ($stmt_update->execute()) {
-                $_SESSION['flash_success'] = 'Customer updated successfully.';
-            } else {
-                $_SESSION['flash_error'] = 'Failed to update customer.';
-            }
-            $stmt_update->close();
-        }
-        $stmt->close();
-    } else {
-        $_SESSION['flash_error'] = 'Invalid data provided for update.';
-    }
-    header('Location: customers_list.php');
-    exit;
-}
-
-
-// --- CHANGE CUSTOMER STATUS (ACTIVATE/DEACTIVATE) ---
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'], $_GET['cus_id'])) {
-    $cus_id = (int)$_GET['cus_id'];
-    $action = $_GET['action'];
-    
-    if ($cus_id > 0 && in_array($action, ['activate', 'deactivate'])) {
-        $new_status = ($action === 'activate') ? 'active' : 'inactive';
-        $stmt = $conn->prepare("UPDATE customer_list SET status = ? WHERE cus_id = ?");
-        $stmt->bind_param('si', $new_status, $cus_id);
-        
-        if ($stmt->execute()) {
-            $_SESSION['flash_success'] = "Customer has been {$new_status}d successfully.";
-        } else {
-            $_SESSION['flash_error'] = "Failed to {$action} customer.";
-        }
-        $stmt->close();
-    } else {
-        $_SESSION['flash_error'] = 'Invalid action or customer ID.';
-    }
-    header('Location: customers_list.php');
-    exit;
-}
-
-// Redirect if no valid action is found
-$_SESSION['flash_error'] = 'Invalid request.';
-header('Location: customers_list.php');
-exit;
+// File: customer_actions.php (Fixed)
+// This file should ONLY contain the HTML structure for the modals.
+// All processing logic has been moved to dedicated action files
+// (e.g., add_customer.php, update_customer.php) to prevent "headers already sent" errors.
 ?>
+
+<!-- Add/Update Customer Modal -->
+<div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customerModalLabel">Add New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <!-- The form's action attribute will be set by JavaScript in customers_list.php -->
+            <form id="customerForm" method="post">
+                <div class="modal-body">
+                    <!-- Hidden input for the customer ID, used for updates -->
+                    <input type="hidden" name="customerId" id="customerId">
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">Customer Name</label>
+                        <input type="text" class="form-control" id="customerName" name="customerName" required placeholder="Enter customer name">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Status Change Confirmation Modal -->
+<div class="modal fade" id="statusChangeModal" tabindex="-1" aria-labelledby="statusChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusChangeModalLabel">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-body-text">Are you sure you want to change status for <strong class="customer-name"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <!-- The href and button class will be set by JavaScript -->
+                <a href="#" class="btn btn-danger confirm-status-change">Confirm</a>
+            </div>
+        </div>
+    </div>
+</div>
