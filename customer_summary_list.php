@@ -38,9 +38,10 @@ $offset = ($currentPage - 1) * $perPage;
 // =================================
 $params = [];
 $types = '';
+// *** CHANGE: Added pl.status = 'active' to the JOIN condition to filter only active POs ***
 $base_sql = "
     FROM customer_list cl
-    LEFT JOIN po_list pl ON cl.cus_id = pl.cus_id AND pl.po_date BETWEEN ? AND ?
+    LEFT JOIN po_list pl ON cl.cus_id = pl.cus_id AND pl.status = 'active' AND pl.po_date BETWEEN ? AND ?
     LEFT JOIN po_items pi ON pl.po_id = pi.po_id
 ";
 $params = [$start_date, $end_date];

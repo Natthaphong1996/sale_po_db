@@ -7,16 +7,19 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+DROP DATABASE IF EXISTS `sale_po_db`;
 CREATE DATABASE IF NOT EXISTS `sale_po_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
 USE `sale_po_db`;
 
+DROP TABLE IF EXISTS `customer_list`;
 CREATE TABLE IF NOT EXISTS `customer_list` (
   `cus_id` int(11) NOT NULL AUTO_INCREMENT,
   `cus_name` varchar(255) NOT NULL,
   `status` enum('active','inactive') NOT NULL DEFAULT 'active',
   PRIMARY KEY (`cus_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS `po_items`;
 CREATE TABLE IF NOT EXISTS `po_items` (
   `item_id` int(11) NOT NULL AUTO_INCREMENT,
   `po_id` int(11) NOT NULL,
@@ -30,8 +33,9 @@ CREATE TABLE IF NOT EXISTS `po_items` (
   PRIMARY KEY (`item_id`),
   KEY `po_id` (`po_id`),
   CONSTRAINT `po_items_ibfk_1` FOREIGN KEY (`po_id`) REFERENCES `po_list` (`po_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS `po_item_history`;
 CREATE TABLE IF NOT EXISTS `po_item_history` (
   `hist_id` int(11) NOT NULL AUTO_INCREMENT,
   `item_id` int(11) NOT NULL,
@@ -44,19 +48,23 @@ CREATE TABLE IF NOT EXISTS `po_item_history` (
   PRIMARY KEY (`hist_id`),
   KEY `item_id` (`item_id`),
   CONSTRAINT `po_item_history_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `po_items` (`item_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS `po_list`;
 CREATE TABLE IF NOT EXISTS `po_list` (
   `po_id` int(11) NOT NULL AUTO_INCREMENT,
   `po_no` char(50) NOT NULL,
   `cus_id` int(11) NOT NULL,
   `po_date` date NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'active' COMMENT 'สถานะของใบสั่งซื้อ เช่น active, completed, cancelled',
+  `cancel_reason` text DEFAULT NULL COMMENT 'เหตุผลในการยกเลิกใบสั่งซื้อ',
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   PRIMARY KEY (`po_id`),
   UNIQUE KEY `po_no` (`po_no`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS `po_pdf`;
 CREATE TABLE IF NOT EXISTS `po_pdf` (
   `po_pdf_id` int(11) NOT NULL,
   `po_no` varchar(50) NOT NULL,
@@ -65,6 +73,7 @@ CREATE TABLE IF NOT EXISTS `po_pdf` (
   PRIMARY KEY (`po_pdf_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS `product_list`;
 CREATE TABLE IF NOT EXISTS `product_list` (
   `prod_id` int(11) NOT NULL AUTO_INCREMENT,
   `prod_code` varchar(50) DEFAULT NULL,
@@ -80,16 +89,18 @@ CREATE TABLE IF NOT EXISTS `product_list` (
   `date_price` datetime NOT NULL,
   `status` enum('active','inactive') DEFAULT 'active',
   PRIMARY KEY (`prod_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS `product_price`;
 CREATE TABLE IF NOT EXISTS `product_price` (
   `price_id` int(11) NOT NULL AUTO_INCREMENT,
   `price_value` double DEFAULT NULL,
   `prod_id` int(11) DEFAULT NULL,
   `date_update` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`price_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=291 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=294 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS `product_price_history`;
 CREATE TABLE IF NOT EXISTS `product_price_history` (
   `price_log_id` int(11) NOT NULL AUTO_INCREMENT,
   `price_id` int(11) DEFAULT NULL,
@@ -98,15 +109,17 @@ CREATE TABLE IF NOT EXISTS `product_price_history` (
   `change_date` datetime DEFAULT current_timestamp(),
   `user_id` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`price_log_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS `prod_type_list`;
 CREATE TABLE IF NOT EXISTS `prod_type_list` (
   `type_id` int(11) NOT NULL AUTO_INCREMENT,
   `type_name` varchar(100) NOT NULL,
   `status` enum('active','inactive') NOT NULL DEFAULT 'active',
   PRIMARY KEY (`type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS `prod_user`;
 CREATE TABLE IF NOT EXISTS `prod_user` (
   `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(50) DEFAULT NULL,

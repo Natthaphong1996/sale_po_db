@@ -90,7 +90,7 @@ $result = $stmt->get_result();
                                 <td><?= htmlspecialchars($row['cus_name']) ?></td>
                                 <td class="text-center"><span class="badge <?= $row['status'] === 'active' ? 'bg-success' : 'bg-secondary' ?>"><?= ucfirst($row['status']) ?></span></td>
                                 <td class="text-center"><div class="btn-group btn-group-sm">
-                                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#customerModal" data-action="update" data-id="<?= $row['cus_id'] ?>" data-name="<?= htmlspecialchars($row['cus_name']) ?>"><i class="bi bi-pencil-fill"></i> Edit</button>
+                                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#customerModal" data-action="update" data-id="<?= $row['cus_id'] ?>" data-name="<?= htmlspecialchars($row['cus_name'], ENT_QUOTES) ?>"><i class="bi bi-pencil-fill"></i> Edit</button>
                                     <button type="button" class="btn <?= $row['status'] === 'active' ? 'btn-danger' : 'btn-success' ?> status-change-btn" data-bs-toggle="modal" data-bs-target="#statusChangeModal" data-id="<?= $row['cus_id'] ?>" data-name="<?= htmlspecialchars($row['cus_name']) ?>" data-action="<?= $row['status'] === 'active' ? 'deactivate' : 'activate' ?>"><i class="bi <?= $row['status'] === 'active' ? 'bi-x-circle' : 'bi-check-circle' ?>"></i> <?= $row['status'] === 'active' ? 'Deactivate' : 'Activate' ?></button>
                                 </div></td>
                             </tr>
@@ -106,23 +106,29 @@ $result = $stmt->get_result();
     </div>
 </div>
 
-<!-- Add/Edit Customer Modal -->
 <div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customerModalLabel" aria-hidden="true">
-  <div class="modal-dialog"><form id="customerForm" method="post" action="customer_actions.php">
-    <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title" id="customerModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">
-            <input type="hidden" name="action" id="customerAction">
-            <input type="hidden" name="cus_id" id="cus_id">
-            <label for="cus_name" class="form-label">Customer Name</label>
-            <input type="text" class="form-control" id="cus_name" name="cus_name" required>
+  <div class="modal-dialog">
+    <form id="customerForm" method="post">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customerModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="cus_id" id="cus_id">
+                <label for="cus_name" class="form-label">Customer Name</label>
+                <input type="text" class="form-control" id="cus_name" name="cus_name" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
         </div>
-        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
-    </div>
-  </form></div>
+    </form>
+  </div>
 </div>
 
-<!-- Status Change Confirmation Modal -->
+
 <div class="modal fade" id="statusChangeModal" tabindex="-1" aria-labelledby="statusChangeModalLabel" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title" id="statusChangeModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -141,14 +147,23 @@ document.addEventListener('DOMContentLoaded', function() {
     customerModal.addEventListener('show.bs.modal', function(e) {
         const action = e.relatedTarget.getAttribute('data-action');
         const form = document.getElementById('customerForm');
-        document.getElementById('customerAction').value = action;
+        const modalTitle = document.getElementById('customerModalLabel');
+
+        // รีเซ็ตฟอร์มทุกครั้งที่เปิด Modal
+        form.reset(); 
+
         if (action === 'update') {
-            document.getElementById('customerModalLabel').textContent = 'Edit Customer';
+            // === โหมดแก้ไข (Update) ===
+            modalTitle.textContent = 'Edit Customer';
+            form.action = 'update_customer.php'; // **กำหนด action ไปที่ไฟล์ update_customer.php**
+            // นำข้อมูลเดิมมาใส่ในฟอร์ม
             document.getElementById('cus_id').value = e.relatedTarget.getAttribute('data-id');
             document.getElementById('cus_name').value = e.relatedTarget.getAttribute('data-name');
         } else {
-            document.getElementById('customerModalLabel').textContent = 'Add New Customer';
-            form.reset();
+            // === โหมดเพิ่ม (Add) ===
+            modalTitle.textContent = 'Add New Customer';
+            form.action = 'add_customer.php'; // **กำหนด action ไปที่ไฟล์ add_customer.php**
+            document.getElementById('cus_id').value = ''; // เคลียร์ค่า ID
         }
     });
 
@@ -161,7 +176,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const body = document.getElementById('statusChangeModalBody');
         document.getElementById('statusChangeModalLabel').textContent = `Confirm ${action.charAt(0).toUpperCase() + action.slice(1)}`;
         body.innerHTML = `Are you sure you want to <strong>${action}</strong> the customer "<strong>${name}</strong>"?`;
-        link.href = `customer_actions.php?action=${action}&cus_id=${id}`;
+        
+        // **แก้ไข: ใช้ไฟล์เฉพาะสำหรับการ activate/deactivate**
+        const targetFile = action === 'deactivate' ? 'deactivate_customer.php' : 'activate_customer.php';
+        link.href = `${targetFile}?cus_id=${id}`;
+        
         link.className = `btn ${action === 'deactivate' ? 'btn-danger' : 'btn-success'}`;
         link.textContent = `Yes, ${action.charAt(0).toUpperCase() + action.slice(1)}`;
     });

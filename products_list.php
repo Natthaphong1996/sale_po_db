@@ -146,7 +146,7 @@ $product_types = $conn->query("SELECT type_id, type_name FROM prod_type_list WHE
                             }
                             ?>
                             <?= sort_link('prod_code', 'Code', $sort_by, $sort_order) ?>
-                            <?= sort_link('customer_code', 'Customer Code', $sort_by, $sort_order) ?>
+                            <?= sort_link('customer_code', 'Part No.', $sort_by, $sort_order) ?>
                             <?= sort_link('type_name', 'Type', $sort_by, $sort_order) ?>
                             <th>Description</th>
                             <th>Dimension</th>
@@ -191,18 +191,17 @@ $product_types = $conn->query("SELECT type_id, type_name FROM prod_type_list WHE
     </div>
 </div>
 
+<!-- Add/Edit Modal -->
 <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form id="productForm" method="post">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="productModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+                <div class="modal-header"><h5 class="modal-title" id="productModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <input type="hidden" name="prod_id" id="prod_id">
                     <div class="row g-3">
                         <div class="col-md-6"><label for="prod_code" class="form-label">Product Code</label><input type="text" class="form-control" name="prod_code" id="prod_code" required></div>
-                        <div class="col-md-6"><label for="customer_code" class="form-label">Customer Code</label><input type="text" class="form-control" name="customer_code" id="customer_code" placeholder="Optional customer code"></div>
+                        <div class="col-md-6"><label for="customer_code" class="form-label">Part No.</label><input type="text" class="form-control" name="customer_code" id="customer_code" placeholder="Optional Part No."></div>
                         <div class="col-md-6">
                             <label for="type_id" class="form-label">Product Type</label>
                             <select name="type_id" id="type_id" class="form-select" required>
@@ -225,8 +224,22 @@ $product_types = $conn->query("SELECT type_id, type_name FROM prod_type_list WHE
         </form>
     </div>
 </div>
+<!-- Detail Modal -->
 <div class="modal fade" id="detailProductModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalLabel">Product Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="detailContent" class="text-center p-4"><div class="spinner-border"></div></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>
-<div class="modal fade" id="statusChangeModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="statusModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="statusChangeModalBody"></div><div class="modal-footer"><form id="statusChangeForm" method="post" action="update_status.php"><input type="hidden" name="prod_id" id="statusChangeProdId"><input type="hidden" name="new_status" id="statusChangeNewStatus"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn" id="statusChangeConfirmBtn">Confirm</button></form></div></div></div></div>
+
+<!-- *** MAJOR CHANGE: Simplified Status Change Modal *** -->
+<div class="modal fade" id="statusChangeModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="statusModalLabel"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="statusChangeModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a id="statusChangeConfirmBtn" class="btn">Confirm</a>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -240,44 +253,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('productForm');
         const modalTitle = productModal.querySelector('.modal-title');
         
-        const prodIdInput = form.querySelector('#prod_id');
-        const prodCodeInput = form.querySelector('#prod_code');
-        const customerCodeInput = form.querySelector('#customer_code');
-        const typeIdSelect = form.querySelector('#type_id');
-        const prodDescTextarea = form.querySelector('#prod_desc');
-        const thicknessInput = form.querySelector('#thickness');
-        const widthInput = form.querySelector('#width');
-        const lengthInput = form.querySelector('#length');
-        const priceInput = form.querySelector('#price');
-        const statusSelect = form.querySelector('#status');
-        const statusCol = statusSelect.closest('.col-md-6');
+        const statusCol = form.querySelector('#status').closest('.col-md-6');
 
         if (action === 'add') {
             modalTitle.textContent = 'Add New Product';
             form.action = 'add_product.php';
             form.reset();
-            prodIdInput.value = '';
+            form.querySelector('#prod_id').value = '';
             statusCol.style.display = 'none';
         } else { // edit
             modalTitle.textContent = 'Edit Product';
             form.action = 'update_product.php';
             const product = JSON.parse(button.getAttribute('data-product'));
             
-            prodIdInput.value = product.prod_id;
-            prodCodeInput.value = product.prod_code;
-            customerCodeInput.value = product.customer_code || '';
-            typeIdSelect.value = product.type_id;
-            prodDescTextarea.value = product.prod_desc;
-            thicknessInput.value = product.thickness;
-            widthInput.value = product.width;
-            lengthInput.value = product.length;
-            priceInput.value = product.price;
-            statusSelect.value = product.status;
+            form.querySelector('#prod_id').value = product.prod_id;
+            form.querySelector('#prod_code').value = product.prod_code;
+            form.querySelector('#customer_code').value = product.customer_code || '';
+            form.querySelector('#type_id').value = product.type_id;
+            form.querySelector('#prod_desc').value = product.prod_desc;
+            form.querySelector('#thickness').value = product.thickness;
+            form.querySelector('#width').value = product.width;
+            form.querySelector('#length').value = product.length;
+            form.querySelector('#price').value = product.price;
+            form.querySelector('#status').value = product.status;
             statusCol.style.display = 'block';
         }
     });
 
-    // --- Status Change Modal Logic ---
+    // --- Status Change Modal Logic (Simplified) ---
     const statusChangeModal = document.getElementById('statusChangeModal');
     statusChangeModal.addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
@@ -285,28 +288,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const prodCode = button.getAttribute('data-code');
         const action = button.getAttribute('data-action');
         
-        document.getElementById('statusChangeProdId').value = prodId;
         const confirmBtn = document.getElementById('statusChangeConfirmBtn');
         const modalTitle = document.getElementById('statusModalLabel');
         const modalBody = document.getElementById('statusChangeModalBody');
-        const newStatusInput = document.getElementById('statusChangeNewStatus');
+
+        let targetFile, modalText, btnClass, btnText;
 
         if (action === 'deactivate') {
+            targetFile = 'deactivate_product.php';
             modalTitle.textContent = 'Confirm Deactivation';
-            modalBody.innerHTML = `Are you sure you want to deactivate product "<strong>${prodCode}</strong>"?`;
-            confirmBtn.className = 'btn btn-danger';
-            confirmBtn.textContent = 'Yes, Deactivate';
-            newStatusInput.value = 'inactive';
+            modalText = `Are you sure you want to deactivate product "<strong>${prodCode}</strong>"?`;
+            btnClass = 'btn-danger';
+            btnText = 'Yes, Deactivate';
         } else {
+            targetFile = 'activate_product.php';
             modalTitle.textContent = 'Confirm Activation';
-            modalBody.innerHTML = `Are you sure you want to activate product "<strong>${prodCode}</strong>"?`;
-            confirmBtn.className = 'btn btn-success';
-            confirmBtn.textContent = 'Yes, Activate';
-            newStatusInput.value = 'active';
+            modalText = `Are you sure you want to activate product "<strong>${prodCode}</strong>"?`;
+            btnClass = 'btn-success';
+            btnText = 'Yes, Activate';
         }
+
+        modalBody.innerHTML = modalText;
+        confirmBtn.href = `${targetFile}?prod_id=${prodId}`;
+        confirmBtn.className = `btn ${btnClass}`;
+        confirmBtn.textContent = btnText;
     });
 
-    // --- Detail Modal AJAX Logic (Updated) ---
+    // --- Detail Modal AJAX Logic ---
     const detailModal = document.getElementById('detailProductModal');
     detailModal.addEventListener('show.bs.modal', function(event) {
         const prodId = event.relatedTarget.getAttribute('data-id');
@@ -314,12 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '<div class="d-flex justify-content-center p-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
         
         fetch(`product_detail_ajax.php?prod_id=${prodId}`)
-            .then(res => {
-                if (!res.ok) {
-                    return res.json().then(err => Promise.reject(err));
-                }
-                return res.json();
-            })
+            .then(res => res.ok ? res.json() : res.json().then(err => Promise.reject(err)))
             .then(data => {
                 let historyHtml = '<p class="text-muted text-center">No price history found.</p>';
                 if (data.history && data.history.length > 0) {
@@ -327,40 +330,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.history.forEach(h => {
                         const userDisplay = h.thainame || (h.user_id ? `ID: ${h.user_id}` : '-');
                         const changeDate = new Date(h.change_date).toLocaleString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                        historyHtml += `<tr>
-                            <td class="text-end">${parseFloat(h.change_from).toFixed(2)}</td>
-                            <td class="text-end">${parseFloat(h.change_to).toFixed(2)}</td>
-                            <td class="text-center">${changeDate}</td>
-                            <td>${userDisplay}</td>
-                        </tr>`;
+                        historyHtml += `<tr><td class="text-end">${parseFloat(h.change_from).toFixed(2)}</td><td class="text-end">${parseFloat(h.change_to).toFixed(2)}</td><td class="text-center">${changeDate}</td><td>${userDisplay}</td></tr>`;
                     });
                     historyHtml += '</tbody></table>';
                 }
-                const escapeHtml = (unsafe) => unsafe === null || unsafe === undefined ? '' : String(unsafe).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-                container.innerHTML = `
-                    <div class="text-start">
-                        <h5 class="mb-3">${escapeHtml(data.prod_code)}</h5>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <p class="mb-2"><strong>Customer Code:</strong> ${escapeHtml(data.customer_code) || '-'}</p>
-                                <p class="mb-2"><strong>Type:</strong> ${escapeHtml(data.type_name) || '-'}</p>
-                            </div>
-                            <div class="col-sm-6">
-                                <p class="mb-2"><strong>Dimension:</strong> ${escapeHtml(data.dimension)}</p>
-                                <p class="mb-2"><strong>Current Price:</strong> ${parseFloat(data.price).toFixed(2)}</p>
-                            </div>
-                        </div>
-                        <p class="mb-3"><strong>Description:</strong> ${escapeHtml(data.prod_desc) || '-'}</p>
-                        <hr>
-                        <h6><i class="bi bi-clock-history me-2"></i>Price History</h6>
-                        ${historyHtml}
-                    </div>
-                `;
+                const escape = s => s === null || s === undefined ? '' : String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]);
+                container.innerHTML = `<div class="text-start"><h5>${escape(data.prod_code)}</h5><div class="row"><div class="col-sm-6"><p class="mb-2"><strong>Part No.:</strong> ${escape(data.customer_code) || '-'}</p><p class="mb-2"><strong>Type:</strong> ${escape(data.type_name) || '-'}</p></div><div class="col-sm-6"><p class="mb-2"><strong>Dimension:</strong> ${escape(data.dimension)}</p><p class="mb-2"><strong>Current Price:</strong> ${parseFloat(data.price).toFixed(2)}</p></div></div><p class="mb-3"><strong>Description:</strong> ${escape(data.prod_desc) || '-'}</p><hr><h6><i class="bi bi-clock-history me-2"></i>Price History</h6>${historyHtml}</div>`;
             })
-            .catch(err => {
-                console.error('Error fetching product details:', err);
-                container.innerHTML = `<p class="text-danger fw-bold text-center p-4">${err.message || 'Error loading details. Please try again.'}</p>`;
-            });
+            .catch(err => { container.innerHTML = `<p class="text-danger fw-bold text-center p-4">${err.message || 'Error loading details. Please try again.'}</p>`; });
     });
 });
 </script>

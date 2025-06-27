@@ -31,15 +31,24 @@ if (empty($po_no) || empty($po_date) || empty($items)) {
 $conn->begin_transaction();
 
 try {
-    // 1. Get po_id from po_no
-    $stmt_get_po_id = $conn->prepare("SELECT po_id FROM po_list WHERE po_no = ?");
-    $stmt_get_po_id->bind_param('s', $po_no);
-    $stmt_get_po_id->execute();
-    $po_id = $stmt_get_po_id->get_result()->fetch_assoc()['po_id'] ?? null;
-    $stmt_get_po_id->close();
+    // 1. Get po_id and status from po_no
+    // *** CHANGE: Fetch 'status' along with 'po_id' to check if editing is allowed. ***
+    $stmt_get_po_info = $conn->prepare("SELECT po_id, status FROM po_list WHERE po_no = ?");
+    $stmt_get_po_info->bind_param('s', $po_no);
+    $stmt_get_po_info->execute();
+    $po_info = $stmt_get_po_info->get_result()->fetch_assoc();
+    $stmt_get_po_info->close();
 
-    if (!$po_id) {
+    if (!$po_info) {
         throw new Exception("PO number not found.");
+    }
+    
+    $po_id = $po_info['po_id'];
+    
+    // *** MAJOR CHANGE: Server-side check to prevent updating a deactivated PO. ***
+    // This is a crucial security step.
+    if ($po_info['status'] === 'deactivated') {
+        throw new Exception("Cannot update a cancelled PO (#" . htmlspecialchars($po_no) . ").");
     }
 
     // 2. Update the main PO date in po_list
@@ -94,12 +103,6 @@ try {
             
             // 3b. Insert a record into po_item_history
             $json_changed_data = json_encode($item_changed_data);
-            $stmt_insert_history = $conn->prepare(
-                "INSERT INTO po_item_history (item_id, po_id, version, price, changed_data, changed_by) 
-                 SELECT ?, ?, COALESCE(MAX(version), 0) + 1, price, ?, ? 
-                 FROM po_item_history WHERE item_id = ?"
-            );
-            // We need a dummy SELECT to get the next version number safely
             $stmt_insert_history_final = $conn->prepare(
                 "INSERT INTO po_item_history (item_id, po_id, version, price, changed_data, changed_by)
                  VALUES (?, ?, (SELECT COALESCE(MAX(h.version), 0) + 1 FROM po_item_history h WHERE h.item_id = ?), (SELECT i.price FROM po_items i WHERE i.item_id = ?), ?, ?)"
@@ -122,6 +125,7 @@ try {
 } catch (Exception $e) {
     // If any error occurs, rollback all changes
     $conn->rollback();
+    // Set a more specific error message to the session
     $_SESSION['flash_error'] = 'An error occurred: ' . $e->getMessage();
 
 } finally {
